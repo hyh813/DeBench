@@ -1,8 +1,8 @@
 // ============================================================================
-// 5.1 C++面向对象 - C++ Object-Oriented Features
+// 5.1 C++ Object-Oriented Features
 // ============================================================================
-// 本章节需要C++14或更高版本编译
-// 编译命令: g++ -std=c++14 -O0 -g -o test_cpp test_cpp_oo.cpp
+// This chapter requires C++14 or higher to compile
+// Compile command: g++ -std=c++14 -O0 -g -o test_cpp test_cpp_oo.cpp
 
 #include <iostream>
 #include <memory>
@@ -10,31 +10,31 @@
 #include <cstring>
 
 // ============================================================================
-// CPP-L3-01: 类成员函数 ⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 类成员函数调用，隐含this指针传递
-// 说明: 完整类定义，包含构造函数、成员函数、数据成员
+// CPP-L3-01: Class member functions ⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: class member function call, implicit this pointer passing
+// Description: Complete class definition, including constructor, member functions, and data members
 class SimpleClass {
 private:
     int value;
     char name[32];
 public:
-    // 构造函数
+    // Constructor
     SimpleClass(int v, const char* n) : value(v) {
         strncpy(name, n, sizeof(name)-1);
         name[sizeof(name)-1] = '\0';
     }
     
-    // 成员函数
+    // member function
     int getValue() const { return value; }
     void setValue(int v) { value = v; }
     
-    // 复杂成员函数
+    // Complex member functions
     int compute(int x) const {
         return value * x + strlen(name);
     }
     
-    // 静态成员函数
+    // static member function
     static int getClassID() { return 0x1234; }
 };
 
@@ -46,13 +46,13 @@ int test_cpp_member_func() {
     int r2 = obj.compute(3);           // 10*3 + 4 = 34
     int r3 = SimpleClass::getClassID(); // 0x1234 = 4660
     
-    return r1 + r2 + r3;  // 期望: 10 + 34 + 4660 = 4704
+    return r1 + r2 + r3;  // Expectation: 10 + 34 + 4660 = 4704
 }
 
 // ============================================================================
-// CPP-L3-02: 构造函数/析构函数 ⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 构造/析构函数调用，对象生命周期管理，动态内存分配
+// CPP-L3-02: Constructor/Destructor ⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: constructor/destructor calls, object life cycle management, dynamic memory allocation
 class LifecycleClass {
 private:
     int* data;
@@ -60,7 +60,7 @@ private:
     static int instance_count;
     
 public:
-    // 构造函数（分配资源）
+    // Constructor (allocate resources)
     LifecycleClass(size_t s) : size(s) {
         data = new int[s];
         for (size_t i = 0; i < s; i++) {
@@ -69,20 +69,20 @@ public:
         instance_count++;
     }
     
-    // 拷贝构造函数
+    // copy constructor
     LifecycleClass(const LifecycleClass& other) : size(other.size) {
         data = new int[size];
         memcpy(data, other.data, size * sizeof(int));
         instance_count++;
     }
     
-    // 析构函数（释放资源）
+    // Destructor (release resources)
     ~LifecycleClass() {
         delete[] data;
         instance_count--;
     }
     
-    // 访问函数
+    // access function
     int getData(size_t idx) const {
         return (idx < size) ? data[idx] : -1;
     }
@@ -90,28 +90,28 @@ public:
     static int getInstanceCount() { return instance_count; }
 };
 
-// 静态成员初始化
+// Static member initialization
 int LifecycleClass::instance_count = 0;
 
 int test_cpp_constructor() {
     int result = 0;
     
-    {  // 作用域块，测试析构
-        LifecycleClass obj(5);  // 调用构造函数
+    {  // Scope blocks, test destruction
+        LifecycleClass obj(5);  // call constructor
         result += obj.getData(2);  // 20
         result += LifecycleClass::getInstanceCount();  // 1
-    }  // 调用析构函数
+    }  // Call destructor
     
     result += LifecycleClass::getInstanceCount() * 1000;  // 0 * 1000 = 0
     
-    return result;  // 期望: 20 + 1 + 0 = 21
+    return result;  // Expectation: 20 + 1 + 0 = 21
 }
 
 // ============================================================================
-// CPP-L3-03: 虚函数调用 ⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 虚表(vtable)机制，运行时多态
-// 说明: 包含虚析构函数，确保vtable完整
+// CPP-L3-03: Virtual function call ⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: virtual table (vtable) mechanism, runtime polymorphism
+// Description: Contains virtual destructor to ensure vtable integrity
 class Base {
 public:
     virtual int virtual_func(int x) { 
@@ -122,7 +122,7 @@ public:
         return "Base";
     }
     
-    virtual ~Base() {}  // 虚析构函数
+    virtual ~Base() {}  // virtual destructor
 };
 
 class Derived : public Base {
@@ -140,33 +140,33 @@ public:
     }
 };
 
-// 通过基类指针调用虚函数（多态）
+// Call virtual function through base class pointer (polymorphism)
 int call_virtual_func(Base *obj, int x) {
-    return obj->virtual_func(x);  // vtable间接调用
+    return obj->virtual_func(x);  // vtable indirect call
 }
 
 int test_cpp_virtual_func() {
     Base base;
     Derived derived(3);
     
-    // 直接调用
+    // call directly
     int r1 = base.virtual_func(5);      // 6
     int r2 = derived.virtual_func(5);   // 15
     
-    // 通过指针多态调用
+    // Polymorphic call via pointer
     Base *pb = &base;
     Base *pd = &derived;
     
     int r3 = call_virtual_func(pb, 5);  // 6
-    int r4 = call_virtual_func(pd, 5);  // 15 (多态)
+    int r4 = call_virtual_func(pd, 5);  // 15 (polymorphic)
     
-    return r1 + r2 + r3 + r4;  // 期望: 6+15+6+15 = 42
+    return r1 + r2 + r3 + r4;  // Expectation: 6+15+6+15 = 42
 }
 
 // ============================================================================
-// CPP-L3-04: 多继承 ⭐⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 多继承下的虚表布局和this指针调整
+// CPP-L3-04: Multiple inheritance ⭐⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: virtual table layout and this pointer adjustment under multiple inheritance
 class BaseA {
 public:
     virtual int funcA() { return 10; }
@@ -193,23 +193,23 @@ int test_cpp_multiple_inheritance() {
     obj.dataA = 100;
     obj.dataB = 200;
     
-    // 多继承对象的this指针调整
-    BaseA *pa = &obj;  // 可能需要this指针调整
-    BaseB *pb = &obj;  // 可能需要this指针调整
+    // Adjust this pointer of multiple inherited objects
+    BaseA *pa = &obj;  // This pointer may need to be adjusted
+    BaseB *pb = &obj;  // This pointer may need to be adjusted
     
     int r1 = pa->funcA();  // 30
     int r2 = pb->funcB();  // 40
     
-    // 检查指针是否相等（需this调整时不等）
+    // Check whether the pointers are equal (not equal when this needs to be adjusted)
     int ptr_equal = (void*)pa == (void*)pb ? 0 : 1;
     
-    return r1 + r2 + ptr_equal;  // 期望: 30+40+1 = 71
+    return r1 + r2 + ptr_equal;  // Expectation: 30+40+1 = 71
 }
 
 // ============================================================================
-// CPP-L3-05: 菱形继承（虚拟继承）⭐⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 虚拟继承避免重复基类子对象
+// CPP-L3-05: Diamond inheritance (virtual inheritance) ⭐⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: Virtual inheritance avoids duplication of base class sub-objects
 class VirtualBase {
 public:
     int shared_data;
@@ -232,48 +232,48 @@ public:
 class DiamondDerived : public MiddleA, public MiddleB {
 public:
     int func() override { 
-        return shared_data + 250;  // 只有一个shared_data副本
+        return shared_data + 250;  // There is only one copy of shared_data
     }
 };
 
 int test_cpp_diamond_inheritance() {
     DiamondDerived obj;
-    obj.shared_data = 50;  // 不模糊，只有一份
+    obj.shared_data = 50;  // Not blurry, only one copy
     
-    // 虚拟继承确保只有一份VirtualBase子对象
+    // Virtual inheritance ensures that there is only one copy of VirtualBase child objects
     VirtualBase *pb = &obj;
     
-    int r1 = pb->func();  // 通过虚拟基类指针调用: 50+250=300
+    int r1 = pb->func();  // Called via virtual base class pointer: 50+250=300
     
-    // 验证只有一份shared_data
+    // Verify that there is only one copy of shared_data
     obj.shared_data = 100;
     int r2 = pb->func();  // 100+250=350
     
-    return r1 + r2;  // 期望: 300 + 350 = 650
+    return r1 + r2;  // Expectation: 300 + 350 = 650
 }
 
 // ============================================================================
-// CPP-L3-06: 运算符重载 ⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 运算符作为函数调用
+// CPP-L3-06: Operator overloading ⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: operator called as function
 class Point {
 public:
     int x, y;
     
     Point(int _x, int _y) : x(_x), y(_y) {}
     
-    // 二元运算符重载
+    // Binary operator overloading
     Point operator+(const Point& other) const {
         return Point(x + other.x, y + other.y);
     }
     
-    // 比较运算符重载
+    // Comparison operator overloading
     bool operator==(const Point& other) const {
         return x == other.x && y == other.y;
     }
     
-    // 自增运算符重载
-    Point& operator++() {  // 前置++
+    // increment operator overloading
+    Point& operator++() {  // Prefix++
         ++x; ++y;
         return *this;
     }
@@ -286,15 +286,15 @@ int test_cpp_operator_overload() {
     Point p3 = p1 + p2;  // operator+
     bool eq = (p1 == p2);  // operator== (false)
     
-    ++p3;  // operator++ (前置)
+    ++p3;  // operator++ (prefix)
     
     return p3.x + p3.y + (eq ? 0 : 10);  // (5+7) + 10 = 22
 }
 
 // ============================================================================
-// CPP-L3-07: 模板函数 ⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 模板实例化后的代码生成
+// CPP-L3-07: Template function ⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: Code generation after template instantiation
 template<typename T>
 T template_max(T a, T b) {
     return a > b ? a : b;
@@ -307,14 +307,14 @@ void template_swap(T& a, T& b) {
     b = temp;
 }
 
-// 显式实例化（确保生成符号）
+// Explicit instantiation (ensuring symbols are generated)
 template int template_max<int>(int, int);
 template double template_max<double>(double, double);
 template void template_swap<int>(int&, int&);
 
 int test_cpp_template_func() {
-    int r1 = template_max(3, 7);          // int实例化: 7
-    double r2 = template_max(2.5, 1.5);   // double实例化: 2.5
+    int r1 = template_max(3, 7);          // int instantiation: 7
+    double r2 = template_max(2.5, 1.5);   // double instantiation: 2.5
     
     int a = 10, b = 20;
     template_swap(a, b);  // a=20, b=10
@@ -323,9 +323,9 @@ int test_cpp_template_func() {
 }
 
 // ============================================================================
-// CPP-L3-08: 模板类 ⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 模板类成员函数实例化
+// CPP-L3-08: Template class ⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: Template class member function instantiation
 template<class T>
 class Container {
 private:
@@ -346,7 +346,7 @@ public:
     int getSize() const { return size; }
 };
 
-// 显式实例化
+// explicit instantiation
 template class Container<int>;
 template class Container<double>;
 
@@ -367,20 +367,20 @@ int test_cpp_template_class() {
 }
 
 // ============================================================================
-// CPP-L3-09: Lambda表达式 ⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: C++14 Lambda闭包，捕获模式
+// CPP-L3-09: Lambda expression ⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: C++14 Lambda closure, capture mode
 int test_cpp_lambda() {
     int capture_by_value = 10;
     int capture_by_ref = 20;
     
-    // Lambda按值捕获，按引用捕获，参数
+    // Lambda capture by value, capture by reference, parameters
     auto lambda1 = [capture_by_value, &capture_by_ref](int x) -> int {
-        capture_by_ref += 5;  // 修改外部变量
+        capture_by_ref += 5;  // Modify external variables
         return x * capture_by_value + capture_by_ref;  // 3*10 + 25 = 55
     };
     
-    // Lambda泛型（C++14）
+    // Lambda generics (C++14)
     auto lambda2 = [](auto a, auto b) {
         return a + b;
     };
@@ -392,56 +392,56 @@ int test_cpp_lambda() {
 }
 
 // ============================================================================
-// CPP-L4-01: 异常抛出与捕获 ⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: C++异常机制，栈展开，异常类型匹配
+// CPP-L4-01: Exception throwing and catching ⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: C++ exception mechanism, stack unwinding, exception type matching
 int test_cpp_exception() {
     int result = 0;
     
     try {
         try {
-            throw 42;  // 抛出int异常
+            throw 42;  // throw int exception
         } catch (int e) {
-            result += e;  // 捕获int: 42
-            throw;  // 重新抛出
+            result += e;  // capture int: 42
+            throw;  // rethrow
         }
     } catch (int e) {
-        result += e * 2;  // 再次捕获: 42*2 = 84
+        result += e * 2;  // Capture again: 42*2 = 84
     }
     
-    // 测试异常层次
+    // Test exception level
     class BaseException {};
     class DerivedException : public BaseException {};
     
     try {
-        throw DerivedException();  // 抛出派生类异常
+        throw DerivedException();  // Throws derived class exception
     } catch (const DerivedException& e) {
-        result += 100;  // 精确匹配: +100
+        result += 100;  // Exact match: +100
     } catch (const BaseException& e) {
-        result += 200;  // 不会执行
+        result += 200;  // will not be executed
     }
     
     return result;  // 42 + 84 + 100 = 226
 }
 
 // ============================================================================
-// CPP-L4-02: 智能指针（unique_ptr）⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: RAII资源管理，所有权语义
+// CPP-L4-02: Smart pointer (unique_ptr) ⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: RAII resource management, ownership semantics
 int test_cpp_smart_ptr() {
-    // unique_ptr管理动态对象
+    // unique_ptr manages dynamic objects
     std::unique_ptr<int> ptr1(new int(100));
     *ptr1 = 200;
     
-    // 转移所有权
+    // transfer ownership
     std::unique_ptr<int> ptr2 = std::move(ptr1);
     int r1 = *ptr2;  // 200
     
-    // unique_ptr管理数组
+    // unique_ptr manages arrays
     std::unique_ptr<int[]> arr(new int[5]{1, 2, 3, 4, 5});
     int r2 = arr[2];  // 3
     
-    // unique_ptr与自定义删除器
+    // unique_ptr and custom deleter
     auto deleter = [](int* p) {
         *p = -1;
         delete p;
@@ -449,15 +449,15 @@ int test_cpp_smart_ptr() {
     std::unique_ptr<int, decltype(deleter)> ptr3(new int(500), deleter);
     int r3 = *ptr3;  // 500
     
-    // ptr3离开作用域时调用删除器
+    // deleter called when ptr3 goes out of scope
     
     return r1 + r2 + r3;  // 200 + 3 + 500 = 703
 }
 
 // ============================================================================
-// CPP-L4-03: RTTI类型识别 ⭐⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 运行时类型信息，dynamic_cast，typeid
+// CPP-L4-03: RTTI type identification ⭐⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: runtime type information, dynamic_cast, typeid
 class RTTIBase {
 public:
     virtual ~RTTIBase() = default;
@@ -482,7 +482,7 @@ int test_cpp_rtti() {
     
     int result = 0;
     
-    // typeid测试
+    // typeid test
     if (typeid(*obj1) == typeid(RTTIDerivedA)) {
         result += 10;
     }
@@ -490,7 +490,7 @@ int test_cpp_rtti() {
         result += 20;
     }
     
-    // dynamic_cast测试
+    // dynamic_cast test
     if (RTTIDerivedA *derivedA = dynamic_cast<RTTIDerivedA*>(obj1)) {
         result += derivedA->derivedA_data();  // +100
     }
@@ -498,8 +498,8 @@ int test_cpp_rtti() {
         result += derivedB->derivedB_data();  // +200
     }
     
-    // type_info::name测试
-    result += strlen(typeid(*obj1).name());  // 名字长度
+    // type_info::name test
+    result += strlen(typeid(*obj1).name());  // name length
     
     delete obj1;
     delete obj2;
@@ -508,7 +508,7 @@ int test_cpp_rtti() {
 }
 
 // ============================================================================
-// 5.1节测试函数
+// Section 5.1 Test Function
 // ============================================================================
 
 void test_cpp_oo_features() {
@@ -533,7 +533,7 @@ void test_cpp_oo_features() {
     printf("CPP-L4-03: %d (期望: 330+)\n", test_cpp_rtti());
 }
 
-// 单独测试入口
+// Individual test entry
 int main() {
     test_cpp_oo_features();
     return 0;

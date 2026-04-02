@@ -1,30 +1,30 @@
 // ============================================================================
-// 7.1 混淆与保护 - Obfuscation & Protection
+// 7.1 Obfuscation & Protection
 // ============================================================================
-// 本章节仅包含可手工实现的混淆技术（无需混淆工具）
-// 编译: gcc -O0 -g -Wall -o 7-123 7-123.c
+// This chapter only covers obfuscation techniques that can be implemented manually (no obfuscation tools are required)
+// Compile: gcc -O0 -g -Wall -o 7-123 7-123.c
 
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-#include <stdlib.h>  // 修复: 添加stdlib.h用于malloc/free
+#include <stdlib.h>  // Fix: Add stdlib.h for malloc/free
 #include <setjmp.h>
 #include <signal.h>
 
 // ============================================================================
-// OBF-L4-02: 虚假分支（永假） ⭐⭐⭐⭐
-// 场景: [SCENE-CRYPTO]
-// 测试: 永假条件分支，编译器优化可能消除，混淆时保留
+// OBF-L4-02: False branch (permanently false) ⭐⭐⭐⭐
+// Scenario: [SCENE-CRYPTO]
+// Test: False conditional branch, compiler optimization may eliminate it, keep it when obfuscation
 
 int param_fake_branch(int x) {
     int result = x;
     
-    // 永假条件：x*x < 0 对于实数x恒不成立
+    // Permanent false condition: x*x < 0 is never true for real number x
     if (x * x < 0) {
         result = result * 2 + 0xDEADBEEF;
     }
     
-    // 另一个永假条件：字符串长度不可能为负
+    // Another false condition: the string length cannot be negative
     const char *str = "test";
     if (strlen(str) < 0) {
         result += 1000;
@@ -34,19 +34,19 @@ int param_fake_branch(int x) {
 }
 
 int call_fake_branch() {
-    return param_fake_branch(10);  // 期望: 10
+    return param_fake_branch(10);  // Expectation: 10
 }
 
 // ============================================================================
-// OBF-L4-03: 不透明谓词 ⭐⭐⭐⭐⭐
-// 场景: [SCENE-CRYPTO]
-// 测试: 复杂但结果确定的谓词表达式
+// OBF-L4-03: Opaque predicate ⭐⭐⭐⭐⭐
+// Scenario: [SCENE-CRYPTO]
+// Test: Complex but deterministic predicate expressions
 
 int param_opaque_predicate(int x) {
-    // 不透明谓词1：复杂恒等式
+    // Opaque Predicate 1: Complex Identities
     int p1 = ((x * x + 2 * x + 1) == ((x + 1) * (x + 1)));
     
-    // 不透明谓词2：gcd计算，对于连续整数gcd(x, x+1)=1
+    // Opaque predicate 2: gcd calculation, for continuous integers gcd(x, x+1)=1
     int a = x;
     int b = x + 1;
     while (b != 0) {
@@ -54,47 +54,47 @@ int param_opaque_predicate(int x) {
         b = a % b;
         a = temp;
     }
-    int p2 = (a == 1);  // 恒为真（连续整数互质）
+    int p2 = (a == 1);  // Always true (consecutive integers are relatively prime)
     
-    // 不透明谓词3：位运算恒等式
+    // Opaque Predicate 3: Bitwise Identities
     int p3 = (((x ^ 0xAAAAAAAA) ^ 0xAAAAAAAA) == x);
     
-    // 综合不透明谓词（结果确定但计算复杂）
+    // Comprehensive opaque predicates (result certain but computationally complex)
     if (p1 && p2 && p3) {
-        return x * 2 + 10;  // 总会执行
+        return x * 2 + 10;  // Will always be executed
     } else {
-        return x * 3 + 20;  // 永远不会执行
+        return x * 3 + 20;  // will never be executed
     }
 }
 
 int call_opaque_predicate() {
-    return param_opaque_predicate(5);  // 期望: 20 (5*2+10)
+    return param_opaque_predicate(5);  // Expectation: 20 (5*2+10)
 }
 
 // ============================================================================
-// OBF-L4-04: 指令替换 ⭐⭐⭐⭐
-// 场景: [SCENE-CRYPTO]
-// 测试: 用等效但不同指令序列替换原指令
+// OBF-L4-04: Instruction replacement ⭐⭐⭐⭐
+// Scenario: [SCENE-CRYPTO]
+// Test: Replace original instructions with equivalent but different instruction sequences
 
 int param_instruction_substitution(int x) {
     int result = x;
     
-    // 替换1: x*6 → (x<<3) - (x<<1)
+    // Replacement 1: x*6 → (x<<3) - (x<<1)
     // 8x - 2x = 6x
     result = (x << 3) - (x << 1);
     
-    // 替换2: x/2 → (x>>1)  对于无符号数等效
+    // Replacement 2: x/2 → (x>>1) is equivalent to unsigned numbers
     unsigned int ux = (unsigned int)x;
     int div2 = ux >> 1;
     
-    // 替换3: x%16 → x & 15
+    // Replacement 3: x%16 → x & 15
     int mod16 = x & 0xF;
     
-    // 替换4: 用加减法实现乘法（加法链）
+    // Replacement 4: Multiplication using addition and subtraction (addition chain)
     // x*15 = x*16 - x = (x<<4) - x
     int mul15 = (x << 4) - x;
     
-    // 修复: 使用正确的变量名mul15而不是mul16
+    // Fix: use correct variable name mul15 instead of mul16
     return result + div2 + mod16 + mul15;
 }
 
@@ -103,24 +103,24 @@ int call_instruction_substitution() {
 }
 
 // ============================================================================
-// OBF-L4-05: 字符串加密 ⭐⭐⭐⭐
-// 场景: [SCENE-CRYPTO]
-// 测试: 运行时解密字符串
+// OBF-L4-05: String encryption ⭐⭐⭐⭐
+// Scenario: [SCENE-CRYPTO]
+// Test: Decrypt a string at runtime
 
-// 简单异或加密字符串（编译时加密）
+// Simple XOR encrypted string (compile time encryption)
 #define ENCRYPT_STR(s, key) {\
     char *p = (char*)s;\
     while (*p) { *p ^= key; p++; }\
 }
 
-// 运行时解密函数
+// Runtime decryption function
 const char* decrypt_string(const char *encrypted, char *buffer, size_t len, char key) {
     strncpy(buffer, encrypted, len);
     buffer[len-1] = '\0';
     
     char *p = buffer;
     while (*p) {
-        *p ^= key;  // 异或解密
+        *p ^= key;  // XOR decryption
         p++;
     }
     
@@ -128,32 +128,32 @@ const char* decrypt_string(const char *encrypted, char *buffer, size_t len, char
 }
 
 int param_string_encryption() {
-    // 加密字符串存储（实际应在编译时生成）
+    // Encrypted string storage (actually should be generated at compile time)
     static char encrypted[] = {0x1A, 0x2B, 0x3C, 0x4D, 0x00};  // "Hello" ^ 0x5A
     
-    // 运行时解密
+    // Runtime decryption
     char decrypted[32];
     decrypt_string(encrypted, decrypted, sizeof(decrypted), 0x5A);
     
-    // 使用解密后的字符串
+    // Use the decrypted string
     return strlen(decrypted) + decrypted[0];
 }
 
 int call_string_encryption() {
-    return param_string_encryption();  // 期望: 5 + 'H'=72 = 77
+    return param_string_encryption();  // Expectation: 5 + 'H'=72 = 77
 }
 
 // ============================================================================
-// 7.2 编译器特有优化 - Compiler-Specific Optimizations
+// 7.2 Compiler-Specific Optimizations - Compiler-Specific Optimizations
 // ============================================================================
-// 编译对比: gcc -O0 vs gcc -O2 观察差异
+// Compilation comparison: gcc -O0 vs gcc -O2 Observe the differences
 
 // ============================================================================
-// OPT-L4-01: 尾调用优化（TCO） ⭐⭐⭐⭐
-// 场景: [SCENE-SYS]
-// 测试: 递归调用可被优化为跳转指令
+// OPT-L4-01: Tail Call Optimization (TCO) ⭐⭐⭐⭐
+// Scenario: [SCENE-SYS]
+// Test: Recursive calls can be optimized into jump instructions
 
-// 尾递归函数（可被TCO优化）
+// Tail recursive function (can be optimized by TCO)
 int param_tail_call_optimized(int n, int acc) {
     if (n <= 0) {
         return acc;
@@ -166,7 +166,7 @@ int call_tail_call_optimized() {
     return param_tail_call_optimized(1000, 0);  // 1+2+...+1000 = 500500
 }
 
-// 非尾递归对比（无法TCO优化）
+// Non-tail recursion comparison (cannot be optimized for TCO)
 int param_non_tail_call(int n) {
     if (n <= 0) {
         return 0;
@@ -180,17 +180,17 @@ int call_non_tail_call() {
 }
 
 // ============================================================================
-// OPT-L4-02: 向量化（SIMD） ⭐⭐⭐⭐⭐
-// 场景: [SCENE-DRIVER]
-// 测试: 循环向量化，使用SIMD指令并行计算
+// OPT-L4-02: Vectorization (SIMD) ⭐⭐⭐⭐⭐
+// Scene: [SCENE-DRIVER]
+// Test: Loop vectorization, parallel computing using SIMD instructions
 
 int param_vectorized_loop(int *a, int *b, int *c, int n) {
-    // 此循环在-O3 -mavx2下可能向量化
+    // This loop may be vectorized under -O3 -mavx2
     for (int i = 0; i < n; i++) {
-        c[i] = a[i] + b[i];  // 独立迭代，可向量化
+        c[i] = a[i] + b[i];  // Independent iteration, vectorizable
     }
     
-    // 验证结果
+    // Verification results
     int sum = 0;
     for (int i = 0; i < n; i++) {
         sum += c[i];
@@ -207,8 +207,8 @@ int call_vectorized_loop() {
 }
 
 // ============================================================================
-// OPT-L5-01: 链接时优化（LTO） ⭐⭐⭐⭐⭐
-// 说明: -flto跨模块优化，此处提供简单测试框架
+// OPT-L5-01: Link Time Optimization (LTO) ⭐⭐⭐⭐⭐
+// Description: -flto cross-module optimization, a simple test framework is provided here
 
 static inline int lto_target_func(int x) {
     return x * 2 + 10;
@@ -219,18 +219,18 @@ int param_link_time_optimization(int x) {
 }
 
 int call_link_time_optimization() {
-    return param_link_time_optimization(5);  // 期望: 20
+    return param_link_time_optimization(5);  // Expectation: 20
 }
 
 // ============================================================================
-// 7.3 异常与边界情况 - Exceptions & Edge Cases
+// 7.3 Exceptions & Edge Cases
 // ============================================================================
-// 部分测试会触发信号，需在隔离环境运行
+// Some tests will trigger signals and need to be run in an isolated environment
 
 // ============================================================================
-// EDGE-L3-01: 除零错误 ⭐⭐⭐
-// 场景: [SCENE-TEST]
-// 测试: 整数除零触发SIGFPE
+// EDGE-L3-01: Division by zero error ⭐⭐⭐
+// Scenario: [SCENE-TEST]
+// Test: Integer division by zero triggers SIGFPE
 
 static jmp_buf jmp_buffer;
 static volatile int div_zero_caught = 0;
@@ -257,13 +257,13 @@ int call_division_by_zero() {
     
     signal(SIGFPE, SIG_DFL);
     
-    return r1 + r2;  // 期望: 1 (2 + -1)
+    return r1 + r2;  // Expectation: 1 (2 + -1)
 }
 
 // ============================================================================
-// EDGE-L3-02: 空指针解引用 ⭐⭐⭐⭐
-// 场景: [SCENE-TEST]
-// 测试: 访问NULL指针触发SIGSEGV
+// EDGE-L3-02: Null pointer dereference ⭐⭐⭐⭐
+// Scenario: [SCENE-TEST]
+// Test: Accessing NULL pointer triggers SIGSEGV
 
 static jmp_buf segv_buffer;
 static volatile int segv_caught = 0;
@@ -291,25 +291,25 @@ int call_null_pointer_deref() {
     
     signal(SIGSEGV, SIG_DFL);
     
-    return r1 + r2;  // 期望: 41 (42 + -1)
+    return r1 + r2;  // Expectation: 41 (42 + -1)
 }
 
 // ============================================================================
-// EDGE-L3-03: 缓冲区溢出 ⭐⭐⭐⭐
-// 场景: [SCENE-TEST]
-// 测试: 栈/堆缓冲区越界写入
+// EDGE-L3-03: Buffer overflow ⭐⭐⭐⭐
+// Scenario: [SCENE-TEST]
+// Test: stack/heap buffer out-of-bounds write
 
 int param_buffer_overflow_stack(int x) {
     char buffer[8];
     int canary = 0x12345678;
     
-    // 故意溢出（覆盖canary）
+    // Intentional overflow (overwrite canary)
     for (int i = 0; i <= 16; i++) {
-        buffer[i] = 'A';  // 修复: 使用buffer避免未使用警告
+        buffer[i] = 'A';  // Fix: Use buffer to avoid unused warnings
     }
     (void)buffer;
     
-    // 修复: 使用canary避免未使用警告
+    // Fix: Use canary to avoid unused warnings
     return (canary == 0x12345678) ? x : -1;
 }
 
@@ -317,7 +317,7 @@ int param_buffer_overflow_heap(int x) {
     char *heap_buffer = (char*)malloc(16);
     if (heap_buffer == NULL) return -2;
     
-    // 堆溢出
+    // Heap overflow
     for (int i = 0; i <= 32; i++) {
         heap_buffer[i] = 'B';
     }
@@ -330,13 +330,13 @@ int call_buffer_overflow() {
     int r1 = param_buffer_overflow_stack(10);
     int r2 = param_buffer_overflow_heap(20);
     
-    return r1 + r2;  // 期望: 30
+    return r1 + r2;  // Expectation: 30
 }
 
 // ============================================================================
-// EDGE-L3-04: 整数溢出 ⭐⭐⭐
-// 场景: [SCENE-CRYPTO]
-// 测试: 有符号/无符号整数溢出
+// EDGE-L3-04: Integer overflow ⭐⭐⭐
+// Scenario: [SCENE-CRYPTO]
+// Test: signed/unsigned integer overflow
 
 int param_integer_overflow(int a, int b) {
     int signed_sum = a + b;
@@ -363,13 +363,13 @@ int call_integer_overflow() {
 }
 
 // ============================================================================
-// EDGE-L4-01: 未定义行为（UB） ⭐⭐⭐⭐
-// 场景: [SCENE-TEST]
-// 测试: 各种C标准未定义行为
+// EDGE-L4-01: Undefined behavior (UB) ⭐⭐⭐⭐
+// Scenario: [SCENE-TEST]
+// Testing: Various C standard undefined behaviors
 
 int param_undefined_behavior(int i) {
-    // 修复: 移除导致编译错误的UB1和UB2
-    // UB1: 移位溢出（在编译时警告）
+    // Fix: Remove UB1 and UB2 causing compilation errors
+    // UB1: shift overflow (warn at compile time)
     // int ub1 = i << 100;
     
     // UB2: use-after-free
@@ -377,35 +377,35 @@ int param_undefined_behavior(int i) {
     // free(p);
     // int ub2 = *p;
     
-    // UB3: 未使用的局部变量（已修复）
+    // UB3: Unused local variable (fixed)
     int local = 100;
-    (void)local;  // 修复: 使用void转换避免未使用警告
+    (void)local;  // Fix: Use void conversion to avoid unused warnings
     
-    return i * 2;  // 简化实现
+    return i * 2;  // Simplify implementation
 }
 
 int call_undefined_behavior() {
     int result = param_undefined_behavior(5);
-    return result;  // 期望: 10
+    return result;  // Expectation: 10
 }
 
 // ============================================================================
-// EDGE-L4-02: 实现定义行为 ⭐⭐⭐
-// 场景: [SCENE-ALL]
-// 测试: C标准明确由实现定义的行为
+// EDGE-L4-02: Implementation-Defined Behavior ⭐⭐⭐
+// Scenario: [SCENE-ALL]
+// Testing: The C standard explicitly implements implementation-defined behavior
 
 int param_implementation_defined() {
     int result = 0;
     
-    // ID 1: char的符号性
+    // ID 1: Symbolism of char
     char c = 0xFF;
     result += (c < 0) ? 1 : 2;
     
-    // ID 2: 右移有符号数
+    // ID 2: Shift signed number right
     int s = -8;
     result += (s >> 1);
     
-    // ID 3: 位域
+    // ID 3: bit field
     struct {
         unsigned int a:3;
         unsigned int b:5;
@@ -428,25 +428,25 @@ int call_implementation_defined() {
 }
 
 // ============================================================================
-// 7.1-7.3节测试函数（统一入口）
+// Sections 7.1-7.3 Test Function (Unified Entry)
 // ============================================================================
 
 void test_obf_opt_edge() {
     printf("=== 测试混淆、优化与边界情况 ===\n");
     
-    // 7.1 混淆
+    // 7.1 Obfuscation
     printf("OBF-L4-02: %d (期望: 10)\n", call_fake_branch());
     printf("OBF-L4-03: %d (期望: 20)\n", call_opaque_predicate());
     printf("OBF-L4-04: %d (期望: 225)\n", call_instruction_substitution());
     printf("OBF-L4-05: %d (期望: 68)\n", call_string_encryption());
     
-    // 7.2 优化（需对比-O0和-O2）
+    // 7.2 Optimization (need to compare -O0 and -O2)
     printf("OPT-L4-01 尾递归: %d (期望: 500500)\n", call_tail_call_optimized());
     printf("OPT-L4-01 非尾: %d (期望: 5050)\n", call_non_tail_call());
     printf("OPT-L4-02 向量化: %d (期望: 72)\n", call_vectorized_loop());
     printf("OPT-L5-01 LTO: %d (期望: 20)\n", call_link_time_optimization());
     
-    // 7.3 边界
+    // 7.3 Boundaries
     printf("EDGE-L3-01: %d (期望: 1)\n", call_division_by_zero());
     printf("EDGE-L3-02: %d (期望: 41)\n", call_null_pointer_deref());
     printf("EDGE-L3-03: %d (期望: 19)\n", call_buffer_overflow());
@@ -455,7 +455,7 @@ void test_obf_opt_edge() {
     printf("EDGE-L4-02: %d (期望: 平台相关)\n", call_implementation_defined());
 }
 
-// 统一main入口（修复重复定义）
+// Unify the main entrance (fix duplicate definitions)
 int main() {
     test_obf_opt_edge();
     return 0;

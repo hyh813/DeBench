@@ -2,27 +2,27 @@
 #include <stdarg.h>
 #include <string.h>
 // ============================================================================
-// 4.1 调用约定 - Calling Conventions
+// 4.1 Calling Conventions - Calling Conventions
 // ============================================================================
 
-// CALL-L1-01: cdecl调用约定 ⭐⭐
-// 场景: [SCENE-ALL] x86平台默认
-// 测试: 参数从右到左压栈，调用者清理栈
+// CALL-L1-01: cdecl calling convention ⭐⭐
+// Scenario: [SCENE-ALL] x86 platform default
+// Test: Parameters are pushed onto the stack from right to left, and the caller clears the stack
 #ifdef _WIN32
     int __cdecl cdecl_func(int a, int b) { return a + b; }
 #elif defined(__i386__) || defined(__i686__)
-    // x86平台使用cdecl，x64平台忽略该属性（因为只有一种调用约定）
+    // x86 platforms use cdecl, x64 platforms ignore this attribute (because there is only one calling convention)
     int __attribute__((cdecl)) cdecl_func(int a, int b) { return a + b; }
 #else
-    // 其他平台使用默认调用约定
+    // Other platforms use the default calling convention
     int cdecl_func(int a, int b) { return a + b; }
 #endif
 
 int call_cdecl() { return cdecl_func(5, 10); }
 
-// CALL-L1-02: stdcall调用约定 ⭐⭐⭐
-// 场景: [SCENE-DESK] Windows API标准
-// 测试: 参数从右到左压栈，被调用者清理栈
+// CALL-L1-02: stdcall calling convention ⭐⭐⭐
+// Scenario: [SCENE-DESK] Windows API Standard
+// Test: Parameters are pushed onto the stack from right to left, and the callee clears the stack
 #ifdef _WIN32
     int __stdcall stdcall_func(int a, int b) { return a * b; }
 #elif defined(__i386__) || defined(__i686__)
@@ -33,9 +33,9 @@ int call_cdecl() { return cdecl_func(5, 10); }
 
 int call_stdcall() { return stdcall_func(5, 10); }
 
-// CALL-L1-03: fastcall调用约定 ⭐⭐⭐
-// 场景: [SCENE-DESK] 寄存器传参优化
-// 测试: 前两个参数用ecx/edx，其余用栈
+// CALL-L1-03: fastcall calling convention ⭐⭐⭐
+// Scenario: [SCENE-DESK] Register parameter passing optimization
+// Test: use ecx/edx for the first two parameters, and stack for the rest.
 #ifdef _WIN32
     int __fastcall fastcall_func(int a, int b, int c) { return a + b + c; }
 #elif defined(__i386__) || defined(__i686__)
@@ -46,9 +46,9 @@ int call_stdcall() { return stdcall_func(5, 10); }
 
 int call_fastcall() { return fastcall_func(1, 2, 3); }
 
-// CALL-L1-04: thiscall调用约定（C++） ⭐⭐⭐
-// 场景: [SCENE-DESK] C++成员函数默认
-// 测试: this指针通过ecx/rcx传递
+// CALL-L1-04: thiscall calling convention (C++) ⭐⭐⭐
+// Scenario: [SCENE-DESK] C++ member function default
+// Test: this pointer is passed through ecx/rcx
 #ifdef __cplusplus
 class TestClass {
 public:
@@ -61,12 +61,12 @@ int call_thiscall() {
     return obj.thiscall_method(5);
 }
 #else
-int call_thiscall() { return 15; }  // C版本桩
+int call_thiscall() { return 15; }  // C version pile
 #endif
 
-// CALL-L1-05: ARM AAPCS调用约定 ⭐⭐⭐
-// 场景: [SCENE-EMB] ARM架构标准
-// 测试: r0-r3传参，栈传剩余参数
+// CALL-L1-05: ARM AAPCS calling convention ⭐⭐⭐
+// Scenario: [SCENE-EMB] ARM architecture standard
+// Test: r0-r3 pass parameters, and the stack passes the remaining parameters
 #ifdef __arm__
     int __attribute__((pcs("aapcs"))) arm_aapcs_func(int a, int b, int c, int d, int e) {
         return a + b + c + d + e;
@@ -77,9 +77,9 @@ int call_thiscall() { return 15; }  // C版本桩
 
 int call_arm_aapcs() { return arm_aapcs_func(1, 2, 3, 4, 5); }
 
-// CALL-L1-06: MIPS调用约定 ⭐⭐⭐
-// 场景: [SCENE-EMB] MIPS架构
-// 测试: $a0-$a3传参，栈传剩余参数
+// CALL-L1-06: MIPS calling convention ⭐⭐⭐
+// Scenario: [SCENE-EMB] MIPS architecture
+// Test: $a0-$a3 pass parameters, and the stack passes the remaining parameters
 #ifdef __mips__
     int mips_func(int a, int b, int c, int d) { return a + b + c + d; }
 #else
@@ -89,8 +89,8 @@ int call_arm_aapcs() { return arm_aapcs_func(1, 2, 3, 4, 5); }
 int call_mips() { return mips_func(10, 20, 30, 40); }
 
 // CALL-L1-07: System V AMD64 ABI ⭐⭐⭐
-// 场景: [SCENE-ALL] Linux/macOS x64标准
-// 测试: rdi, rsi, rdx, rcx, r8, r9传参
+// Scenario: [SCENE-ALL] Linux/macOS x64 standard
+// Test: rdi, rsi, rdx, rcx, r8, r9 parameter passing
 int amd64_sysv_func(int a, int b, int c, int d, int e, int f) {
     return a + b + c + d + e + f;
 }
@@ -98,17 +98,17 @@ int amd64_sysv_func(int a, int b, int c, int d, int e, int f) {
 int call_amd64_sysv() { return amd64_sysv_func(1, 2, 3, 4, 5, 6); }
 
 // CALL-L1-08: Microsoft x64 ABI ⭐⭐⭐
-// 场景: [SCENE-DESK] Windows x64标准
-// 测试: rcx, rdx, r8, r9传参，栈传剩余
+// Scenario: [SCENE-DESK] Windows x64 Standard
+// Test: rcx, rdx, r8, r9 pass parameters, and the stack passes the remainder
 int ms_x64_func(int a, int b, int c, int d, int e) {
     return a + b + c + d + e;
 }
 
 int call_ms_x64() { return ms_x64_func(1, 2, 3, 4, 5); }
 
-// CALL-L1-09: vectorcall调用约定 ⭐⭐⭐
-// 场景: [SCENE-DESK] Windows向量调用
-// 测试: 前4个参数用寄存器，支持SIMD类型
+// CALL-L1-09: vectorcall calling convention ⭐⭐⭐
+// Scenario: [SCENE-DESK] Windows vector calls
+// Test: The first 4 parameters use registers and support SIMD type
 #ifdef _WIN32
     int __vectorcall vectorcall_func(int a, int b, int c, int d) {
         return a + b + c + d;
@@ -119,9 +119,9 @@ int call_ms_x64() { return ms_x64_func(1, 2, 3, 4, 5); }
 
 int call_vectorcall() { return vectorcall_func(1, 2, 3, 4); }
 
-// CALL-L1-10: 混合调用约定 ⭐⭐⭐⭐
-// 场景: [SCENE-CRYPTO] 跨模块混合调用
-// 测试: 同一程序中多种约定混用
+// CALL-L1-10: Mixed Calling Conventions ⭐⭐⭐⭐
+// Scenario: [SCENE-CRYPTO] Cross-module mixed calls
+// Test: Mixing multiple conventions in the same program
 int mixed_conventions_test() {
     int sum = 0;
     sum += cdecl_func(1, 2);
@@ -131,12 +131,12 @@ int mixed_conventions_test() {
 }
 
 // ======================================
-// CALL-L2-06: 可变参数函数
-// 难度: ⭐⭐⭐⭐
-// 场景: [SCENE-NET]
-// 说明: 支持不定数量和类型的参数，如printf风格函数
-// 实现: 使用stdarg.h中的va_list, va_start, va_arg, va_end
-// 独立性: ✅ 标准C特性，完全独立
+// CALL-L2-06: Variable parameter function
+// Difficulty: ⭐⭐⭐⭐
+// Scene: [SCENE-NET]
+// Description: Supports an indefinite number and type of parameters, such as printf style functions
+// Implementation: Use va_list, va_start, va_arg, va_end in stdarg.h
+// Independence: ✅ Standard C features, completely independent
 int varargs_func(int count, ...) {
     va_list args;
     int sum = 0;
@@ -149,39 +149,39 @@ int varargs_func(int count, ...) {
     
     return sum;
 }
-// CALL-L2-07: 无参数函数
-// 难度: ⭐
-// 场景: [SCENE-ALL]
-// 说明: 函数不接受任何参数，使用void明确标记
-// 独立性: ✅ 最基础的函数形式，完全独立
+// CALL-L2-07: Function without parameters
+// Difficulty: ⭐
+// Scenario: [SCENE-ALL]
+// Note: The function does not accept any parameters and is clearly marked with void
+// Independence: ✅ The most basic functional form, completely independent
 int func_no_args(void) {
     return 42;
 }
-// CALL-L2-08: 多参数函数（6个以上）
-// 难度: ⭐⭐
-// 场景: [SCENE-NET]
-// 说明: 测试超过寄存器数量的参数传递，部分参数通过栈传递
-// 独立性: ✅ 标准C特性，完全独立
+// CALL-L2-08: Multi-parameter function (more than 6)
+// Difficulty: ⭐⭐
+// Scene: [SCENE-NET]
+// Description: Test the parameter transfer that exceeds the number of registers, and some parameters are transferred through the stack.
+// Independence: ✅ Standard C features, completely independent
 int func_many_args(int a, int b, int c, int d, int e, int f, int g, int h) {
     return a + b + c + d + e + f + g + h;
 }
-// CALL-L2-09: 混合参数类型
-// 难度: ⭐⭐
-// 场景: [SCENE-NET]
-// 说明: 参数包含整型、指针、浮点等混合类型，测试寄存器分配和栈布局
-// 独立性: ✅ 标准C特性，完全独立
+// CALL-L2-09: Mixed parameter types
+// Difficulty: ⭐⭐
+// Scene: [SCENE-NET]
+// Note: Parameters include mixed types such as integers, pointers, and floating point, and test register allocation and stack layout.
+// Independence: ✅ Standard C features, completely independent
 int func_mixed_args(int x, char *s, double d, long long ll) {
     int len = s ? strlen(s) : 0;
     return (int)(x + len + d + ll);
 }
-// CALL-L2-10: 大结构体传值
-// 难度: ⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 说明: 大结构体（通常>16字节）作为参数传递，通常通过隐藏指针实现
-// 注意: 不同ABI对结构体传值处理不同，可能通过栈或隐藏指针
-// 独立性: ✅ 标准C特性，完全独立
+// CALL-L2-10: Large structure value transfer
+// Difficulty: ⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Description: Large structures (usually >16 bytes) are passed as parameters, usually implemented through hidden pointers
+// Note: Different ABIs handle structure value transfer differently, which may be through the stack or hidden pointer.
+// Independence: ✅ Standard C features, completely independent
 typedef struct {
-    long long data[16];  // 128字节大结构体
+    long long data[16];  // 128-byte large structure
 } LargeStruct;
 int func_struct_byval(LargeStruct s) {
     long long sum = 0;
@@ -190,11 +190,11 @@ int func_struct_byval(LargeStruct s) {
     }
     return (int)(sum & 0xFFFFFFFF);
 }
-// CALL-L2-11: 结构体传指针
-// 难度: ⭐⭐
-// 场景: [SCENE-ALL]
-// 说明: 结构体指针作为参数，避免大结构体拷贝开销
-// 独立性: ✅ 标准C特性，完全独立
+// CALL-L2-11: Structure passing pointer
+// Difficulty: ⭐⭐
+// Scenario: [SCENE-ALL]
+// Note: Use the structure pointer as a parameter to avoid large structure copy overhead.
+// Independence: ✅ Standard C features, completely independent
 typedef struct {
     int x;
     int y;
@@ -206,76 +206,76 @@ int func_struct_byptr(SmallStruct *p) {
 
 
 // ============================================================================
-// 4.1节测试函数
+// Section 4.1 Test Function
 // ============================================================================
 
 void test_calling_conventions() {
     printf("=== 测试基础调用约定 ===\n");
-    printf("CALL-L1-01: %d\n", call_cdecl());        // 期望: 15
-    printf("CALL-L1-02: %d\n", call_stdcall());      // 期望: 50
-    printf("CALL-L1-03: %d\n", call_fastcall());     // 期望: 6
-    printf("CALL-L1-04: %d\n", call_thiscall());     // 期望: 15
-    printf("CALL-L1-05: %d\n", call_arm_aapcs());    // 期望: 15
-    printf("CALL-L1-06: %d\n", call_mips());         // 期望: 100
-    printf("CALL-L1-07: %d\n", call_amd64_sysv());   // 期望: 21
-    printf("CALL-L1-08: %d\n", call_ms_x64());       // 期望: 15
-    printf("CALL-L1-09: %d\n", call_vectorcall());   // 期望: 10
-    printf("CALL-L1-10: %d\n", mixed_conventions_test()); // 期望: 33
-    // 测试CALL-L2-06: 可变参数
+    printf("CALL-L1-01: %d\n", call_cdecl());        // Expectation: 15
+    printf("CALL-L1-02: %d\n", call_stdcall());      // Expectation: 50
+    printf("CALL-L1-03: %d\n", call_fastcall());     // Expectation: 6
+    printf("CALL-L1-04: %d\n", call_thiscall());     // Expectation: 15
+    printf("CALL-L1-05: %d\n", call_arm_aapcs());    // Expectation: 15
+    printf("CALL-L1-06: %d\n", call_mips());         // Expectation: 100
+    printf("CALL-L1-07: %d\n", call_amd64_sysv());   // Expectation: 21
+    printf("CALL-L1-08: %d\n", call_ms_x64());       // Expectation: 15
+    printf("CALL-L1-09: %d\n", call_vectorcall());   // Expectation: 10
+    printf("CALL-L1-10: %d\n", mixed_conventions_test()); // Expectations: 33
+    // Test CALL-L2-06: variable parameters
     int sum = varargs_func(5, 1, 2, 3, 4, 5);
-    printf("CALL-L2-06：varargs_func(5, 1-5) = %d\n", sum); //期望：15
+    printf("CALL-L2-06：varargs_func(5, 1-5) = %d\n", sum); //Expectation: 15
     
-    // 测试CALL-L2-07: 无参数
+    // Test CALL-L2-07: No parameters
     int no_args = func_no_args();
-    printf("CALL-L2-07：func_no_args() = %d\n", no_args);//期望：42
+    printf("CALL-L2-07：func_no_args() = %d\n", no_args);//Expectation: 42
     
-    // 测试CALL-L2-08: 多参数
+    // Test CALL-L2-08: multiple parameters
     int many = func_many_args(1, 2, 3, 4, 5, 6, 7, 8);
-    printf("CALL-L2-08：func_many_args(1-8) = %d\n", many);//期望：36
+    printf("CALL-L2-08：func_many_args(1-8) = %d\n", many);//Expectation: 36
     
-    // 测试CALL-L2-09: 混合参数
+    // Test CALL-L2-09: Mixing Parameters
     char *test_str = "test";
     int mixed = func_mixed_args(10, test_str, 3.14, 100LL);
-    printf("CALL-L2-09：func_mixed_args(...) = %d\n", mixed);//期望：117
+    printf("CALL-L2-09：func_mixed_args(...) = %d\n", mixed);//Expectation: 117
 
-    // 测试CALL-L2-10: 大结构体传值
+    // Test CALL-L2-10: large structure value transfer
     LargeStruct large;
     for (int i = 0; i < 16; i++) {
-        large.data[i] = i + 1;  // 初始化为1到16
+        large.data[i] = i + 1;  // Initialized from 1 to 16
     }
     int struct_val = func_struct_byval(large);
-    printf("CALL-L2-10：func_struct_byval(large) = %d\n", struct_val);//期望：136
+    printf("CALL-L2-10：func_struct_byval(large) = %d\n", struct_val);//Expectation: 136
     
-    // 测试CALL-L2-11: 结构体传指针
+    // Test CALL-L2-11: structure passing pointer
     SmallStruct s = {5, 10};
     int struct_ptr = func_struct_byptr(&s);
-    printf("CALL-L2-11：func_struct_byptr({5,10}) = %d\n", struct_ptr);//期望：50
+    printf("CALL-L2-11：func_struct_byptr({5,10}) = %d\n", struct_ptr);//Expectation: 50
 }
 
 // ============================================================================
-// 4.2 参数传递模式 - Parameter Passing Patterns
+// 4.2 Parameter Passing Patterns
 // ============================================================================
 
-// PARAM-L1-01: 传值调用（int）⭐
-// 场景: [SCENE-ALL]
-// 测试: 基础值传递，函数内修改不影响调用者
+// PARAM-L1-01: Call by value (int)⭐
+// Scenario: [SCENE-ALL]
+// Test: basic value transfer, modification within the function does not affect the caller
 int param_by_value_int(int x) {
-    x = x * 2;  // 修改局部副本
+    x = x * 2;  // Modify partial copy
     return x;
 }
 
 int call_by_value_int() {
     int val = 5;
     int result = param_by_value_int(val);
-    return val + result;  // val仍为5，result为10
+    return val + result;  // val is still 5 and result is 10
 }
 
-// PARAM-L1-02: 传值调用（指针）⭐
-// 场景: [SCENE-ALL]
-// 测试: 指针本身是值传递，但可修改指向内容
+// PARAM-L1-02: Call by value (pointer)⭐
+// Scenario: [SCENE-ALL]
+// Test: The pointer itself is passed by value, but the content pointed to can be modified
 int param_by_value_ptr(int *p) {
-    *p = *p * 2;  // 可修改指向的数据
-    p = NULL;     // 修改指针本身不影响调用者
+    *p = *p * 2;  // The data pointed to can be modified
+    p = NULL;     // Modifying the pointer itself does not affect the caller
     return p == NULL ? 1 : 0;
 }
 
@@ -283,47 +283,47 @@ int call_by_value_ptr() {
     int val = 5;
     int *ptr = &val;
     int result = param_by_value_ptr(ptr);
-    // val变为10，ptr本身不变
+    // val becomes 10, ptr itself remains unchanged
     return val + result;  // 10 + 1 = 11
 }
 
-// PARAM-L2-01: 数组退化（array decay）⭐⭐⭐
-// 场景: [SCENE-ALL]
-// 测试: 数组参数退化为指针
+// PARAM-L2-01: array decay⭐⭐⭐
+// Scenario: [SCENE-ALL]
+// Test: Array parameters degenerate into pointers
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsizeof-array-argument"
 
 int param_array_decay(int arr[10], int n) {
-    // arr实际是指针，sizeof(arr) == sizeof(int*)
-    // 这是故意的测试场景，用于观察反编译时的行为，所以仅抑制警告
-    return sizeof(arr);  // 返回指针大小而非数组大小
+    // arr is actually a pointer, sizeof(arr) == sizeof(int*)
+    // This is an intentional test scenario to observe the behavior when decompiled, so only the warnings are suppressed
+    return sizeof(arr);  // Returns pointer size instead of array size
 }
 
 #pragma GCC diagnostic pop
 
 int call_array_decay() {
     int array[10] = {0};
-    return param_array_decay(array, 10);  // 数组退化为指针
+    return param_array_decay(array, 10);  // Arrays degenerate into pointers
 }
 
-// PARAM-L2-02: 字符串参数 ⭐⭐
-// 场景: [SCENE-ALL]
-// 测试: const char*安全字符串传递
+// PARAM-L2-02: String parameter ⭐⭐
+// Scenario: [SCENE-ALL]
+// Test: const char* safe string passing
 int param_string(const char *str) {
-    return str[0] + str[1];  // 返回前两个字符ASCII和
+    return str[0] + str[1];  // Returns the first two characters ASCII and
 }
 
 int call_string_param() {
     return param_string("Hello");  // 'H' + 'e' = 72+101=173
 }
 
-// PARAM-L2-03: 指针数组参数 ⭐⭐⭐
-// 场景: [SCENE-NET]
-// 测试: 数组元素为指针
+// PARAM-L2-03: Pointer array parameter ⭐⭐⭐
+// Scene: [SCENE-NET]
+// Test: Array elements are pointers
 int param_ptr_array(char *arr[], int n) {
     int sum = 0;
     for (int i = 0; i < n; i++) {
-        sum += arr[i][0];  // 访问每个字符串首字符
+        sum += arr[i][0];  // Access the first character of each string
     }
     return sum;
 }
@@ -333,9 +333,9 @@ int call_ptr_array() {
     return param_ptr_array(strs, 3);  // 'a'+'d'+'g'=97+100+103=300
 }
 
-// PARAM-L2-04: 可变参数（stdarg）⭐⭐⭐
-// 场景: [SCENE-SYS]
-// 测试: 参数数量可变
+// PARAM-L2-04: Variable parameters (stdarg) ⭐⭐⭐
+// Scenario: [SCENE-SYS]
+// Test: Variable number of parameters
 #include <stdarg.h>
 
 int param_varargs(int count, ...) {
@@ -352,14 +352,14 @@ int param_varargs(int count, ...) {
 }
 
 int call_varargs_param() {
-    return param_varargs(4, 10, 20, 30, 40);  // 期望: 100
+    return param_varargs(4, 10, 20, 30, 40);  // Expectation: 100
 }
 
-// PARAM-L3-01: 函数指针参数 ⭐⭐⭐
-// 场景: [SCENE-NET]
-// 测试: 回调函数作为参数
+// PARAM-L3-01: Function pointer parameter ⭐⭐⭐
+// Scene: [SCENE-NET]
+// Test: callback function as parameter
 int param_func_ptr(int (*callback)(int), int x) {
-    return callback(x) + 10;  // 调用回调并加工结果
+    return callback(x) + 10;  // Call the callback and process the results
 }
 
 static int callback_func(int x) { return x * 2; }
@@ -368,14 +368,14 @@ int call_func_ptr_param() {
     return param_func_ptr(callback_func, 5);  // 10 + 10 = 20
 }
 
-// PARAM-L3-02: 多级指针参数 ⭐⭐⭐⭐
-// 场景: [SCENE-SYS]
-// 测试: 双重指针修改调用者的指针
+// PARAM-L3-02: Multi-level pointer parameters ⭐⭐⭐⭐
+// Scenario: [SCENE-SYS]
+// Test: Double pointer modifies caller's pointer
 int param_double_ptr(int **pp, int new_val) {
     if (pp == NULL || *pp == NULL) return -1;
     
-    **pp = new_val;  // 修改原始值
-    *pp = NULL;      // 修改调用者的指针值
+    **pp = new_val;  // Modify original value
+    *pp = NULL;      // Modify the caller's pointer value
     return 1;
 }
 
@@ -383,25 +383,25 @@ int call_double_ptr() {
     int val = 10;
     int *ptr = &val;
     // int result = param_double_ptr(&ptr, 20);
-    // 原因：result用于执行副作用，但不需要其返回值  效果：告诉编译器这是预期行为
+    // Reason: result is used to perform side effects, but its return value is not required Effect: Tells the compiler that this is expected behavior
     int result __attribute__((unused)) = param_double_ptr(&ptr, 20);
-    // val变为20，ptr变为NULL
+    // val becomes 20 and ptr becomes NULL
     return val + (ptr == NULL ? 1 : 0);  // 20 + 1 = 21
 }
 
-// PARAM-L3-03: 复杂类型指针转换 ⭐⭐⭐⭐
-// 场景: [SCENE-CRYPTO]
-// 测试: 不同类型指针间的reinterpret_cast等价
+// PARAM-L3-03: Complex type pointer conversion ⭐⭐⭐⭐
+// Scenario: [SCENE-CRYPTO]
+// Test: reinterpret_cast equivalence between pointers of different types
 typedef struct { int a, b; } TestIntPair;
 int param_complex_cast(void *p, int type) {
     if (type == 0) {
-        // int* -> char* -> int*  测试：指针类型链式转换
+        // int* -> char* -> int* test: pointer type chain conversion
         int *int_ptr = (int*)p;
         char *char_ptr = (char*)int_ptr;
         int *back_ptr = (int*)char_ptr;
         return *back_ptr;
     } else if (type == 1) {
-        // 测试：void* 到struct指针的强制转换 C语言中每个匿名结构体声明都是不同的类型，即使成员完全一样  所以会触发警告
+        // Test: cast from void* to struct pointer. Each anonymous structure declaration in C language is a different type, even if the members are exactly the same, so a warning will be triggered.
         // struct { int a, b; } *s = (struct { int a, b; }*)p;
         TestIntPair *s = (TestIntPair*)p;
         return s->a + s->b;
@@ -415,14 +415,14 @@ int call_complex_cast() {
     TestIntPair pair = {100, 200};
     param_complex_cast(&pair, 1);
 
-    return param_complex_cast(&val, 0);  // 类型转换后值不变
+    return param_complex_cast(&val, 0);  // Value remains unchanged after type conversion
 }
 
-// PARAM-L3-04: 结构体传值 ⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 大结构体传值可能触发拷贝
+// PARAM-L3-04: Structure value transfer ⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: Passing a large structure by value may trigger copying
 struct BigStruct {
-    int data[16];  // 64字节结构体
+    int data[16];  // 64-byte structure
 };
 
 int param_struct_byval(struct BigStruct s) {
@@ -432,72 +432,72 @@ int param_struct_byval(struct BigStruct s) {
 int call_struct_byval() {
     struct BigStruct s;
     for (int i = 0; i < 16; i++) s.data[i] = i;
-    return param_struct_byval(s);  // 传值可能拷贝
+    return param_struct_byval(s);  // Pass-by-value may be copied
 }
 
-// PARAM-L3-05: 参数求值顺序依赖 ⭐⭐⭐⭐
-// 场景: [SCENE-TEST]
-// 测试: 未定义行为检测
+// PARAM-L3-05: Parameter evaluation order dependence ⭐⭐⭐⭐
+// Scenario: [SCENE-TEST]
+// Test: Undefined behavior detection
 #pragma GCC diagnostic ignored "-Wsequence-point"
-// ++i, ++i是故意测试未定义行为在反编译中的表现。保留测试目的，仅抑制警告
+// ++i, ++i are intentional tests of undefined behavior in decompilation. Reserved for testing purposes, only suppress warnings
 int param_order_dep(int a, int b) {
     return a + b;
 }
 
 int call_order_dep() {
     int i = 0;
-    // 参数求值顺序未定义：可能是(++i, ++i)或相反
-    return param_order_dep(++i, ++i);  // 可能返回2+2或1+2
+    // Argument evaluation order is undefined: may be (++i, ++i) or vice versa
+    return param_order_dep(++i, ++i);  // May return 2+2 or 1+2
 }
 
 // ============================================================================
-// 4.2节测试函数
+// Section 4.2 Test Function
 // ============================================================================
 
 void test_parameter_passing() {
     printf("=== 测试参数传递模式 ===\n");
     
     // PARAM-L1-01
-    printf("PARAM-L1-01: %d\n", call_by_value_int());  // 期望: 15
+    printf("PARAM-L1-01: %d\n", call_by_value_int());  // Expectation: 15
     
     // PARAM-L1-02
-    printf("PARAM-L1-02: %d\n", call_by_value_ptr());  // 期望: 11
+    printf("PARAM-L1-02: %d\n", call_by_value_ptr());  // Expectations: 11
     
     // PARAM-L2-01
-    printf("PARAM-L2-01: %d\n", call_array_decay());  // 期望: 4或8（指针大小）
+    printf("PARAM-L2-01: %d\n", call_array_decay());  // Expected: 4 or 8 (pointer size)
     
     // PARAM-L2-02
-    printf("PARAM-L2-02: %d\n", call_string_param());  // 期望: 173
+    printf("PARAM-L2-02: %d\n", call_string_param());  // Expectation: 173
     
     // PARAM-L2-03
-    printf("PARAM-L2-03: %d\n", call_ptr_array());  // 期望: 300
+    printf("PARAM-L2-03: %d\n", call_ptr_array());  // Expectation: 300
     
     // PARAM-L2-04
-    printf("PARAM-L2-04: %d\n", call_varargs_param());  // 期望: 100
+    printf("PARAM-L2-04: %d\n", call_varargs_param());  // Expectation: 100
     
     // PARAM-L3-01
-    printf("PARAM-L3-01: %d\n", call_func_ptr_param());  // 期望: 20
+    printf("PARAM-L3-01: %d\n", call_func_ptr_param());  // Expectation: 20
     
     // PARAM-L3-02
-    printf("PARAM-L3-02: %d\n", call_double_ptr());  // 期望: 21
+    printf("PARAM-L3-02: %d\n", call_double_ptr());  // Expectation: 21
     
     // PARAM-L3-03
-    printf("PARAM-L3-03: %d\n", call_complex_cast());  // 期望: 305419896 (即0x12345678的十进制)
+    printf("PARAM-L3-03: %d\n", call_complex_cast());  // Expected: 305419896 (i.e. 0x12345678 in decimal)
     
     // PARAM-L3-04
-    printf("PARAM-L3-04: %d\n", call_struct_byval());  // 期望: 15
+    printf("PARAM-L3-04: %d\n", call_struct_byval());  // Expectation: 15
     
     // PARAM-L3-05
-    printf("PARAM-L3-05: %d\n", call_order_dep());  // 期望: 3或4或5（未定义）
+    printf("PARAM-L3-05: %d\n", call_order_dep());  // Expected: 3 or 4 or 5 (undefined)
 }
 
 // ============================================================================
-// 4.3 返回值处理 - Return Value Handling
+// 4.3 Return Value Handling - Return Value Handling
 // ============================================================================
 
-// RET-L1-01: 返回基础类型 ⭐
-// 场景: [SCENE-ALL]
-// 测试: 返回int/char等基本类型
+// RET-L1-01: Return base type ⭐
+// Scenario: [SCENE-ALL]
+// Test: Return basic types such as int/char
 int ret_basic_type(int x) {
     return x * 2;
 }
@@ -505,42 +505,42 @@ int ret_basic_type(int x) {
 int call_ret_basic() {
     int val = 21;
     int result = ret_basic_type(val);
-    return result;  // 期望返回42
+    return result;  // Expected to return 42
 }
 
-// RET-L1-02: 返回指针 ⭐⭐
-// 场景: [SCENE-ALL]
-// 测试: 返回内存地址指针
+// RET-L1-02: Return pointer ⭐⭐
+// Scenario: [SCENE-ALL]
+// Test: Return memory address pointer
 int* ret_pointer(int *p) {
-    return p + 1;  // 返回下一个元素的指针
+    return p + 1;  // Returns a pointer to the next element
 }
 
 int call_ret_pointer() {
     int arr[] = {10, 20, 30};
     int *ptr = ret_pointer(arr);
-    return *ptr;  // 期望返回20
+    return *ptr;  // Expected to return 20
 }
 
-// RET-L1-03: 返回小结构体 ⭐⭐⭐
-// 场景: [SCENE-ALL]
-// 测试: 小结构体可能通过寄存器返回
+// RET-L1-03: Return small structure ⭐⭐⭐
+// Scenario: [SCENE-ALL]
+// Test: small structures may be returned via registers
 struct SmallPoint {
     int x, y;
 };
 
 struct SmallPoint ret_small_struct(int x, int y) {
     struct SmallPoint p = {x, y};
-    return p;  // 小结构体可能通过寄存器返回
+    return p;  // Small structures may be returned via registers
 }
 
 int call_ret_small_struct() {
     struct SmallPoint p = ret_small_struct(3, 4);
-    return p.x + p.y;  // 期望返回7
+    return p.x + p.y;  // Expected to return 7
 }
 
-// RET-L1-04: 返回大结构体 ⭐⭐⭐⭐
-// 场景: [SCENE-DESK]
-// 测试: 大结构体通常通过隐藏指针返回
+// RET-L1-04: Return large structure ⭐⭐⭐⭐
+// Scene: [SCENE-DESK]
+// Test: Large structs are often returned via hidden pointers
 struct LargeData {
     int data[16];
 };
@@ -555,29 +555,29 @@ struct LargeData ret_large_struct(int seed) {
 
 int call_ret_large_struct() {
     struct LargeData d = ret_large_struct(100);
-    return d.data[0] + d.data[15];  // 期望返回215 (100+115)
+    return d.data[0] + d.data[15];  // Expected to return 215 (100+115)
 }
 
-// RET-L2-01: 返回函数指针 ⭐⭐⭐
-// 场景: [SCENE-NET]
-// 测试: 根据条件返回不同函数
+// RET-L2-01: Return function pointer ⭐⭐⭐
+// Scene: [SCENE-NET]
+// Test: Return different functions based on conditions
 int func_a(int x) { return x + 10; }
 int func_b(int x) { return x * 2; }
 
 typedef int (*func_ptr_t)(int);
 
 func_ptr_t ret_func_ptr(int selector) {
-    return selector ? func_b : func_a;  // 返回函数指针
+    return selector ? func_b : func_a;  // Return function pointer
 }
 
 int call_ret_func_ptr() {
     func_ptr_t f = ret_func_ptr(1);
-    return f(5);  // 期望返回10 (5*2)
+    return f(5);  // Expected to return 10 (5*2)
 }
 
-// RET-L2-02: 返回void*不透明指针 ⭐⭐⭐
-// 场景: [SCENE-SYS]
-// 测试: 返回不透明句柄
+// RET-L2-02: Return void*opaque pointer ⭐⭐⭐
+// Scenario: [SCENE-SYS]
+// Test: Return opaque handle
 void* ret_opaque_handle(int type) {
     static int handle1 = 100;
     static double handle2 = 3.14;
@@ -587,25 +587,25 @@ void* ret_opaque_handle(int type) {
 
 int call_ret_opaque() {
     void *h = ret_opaque_handle(0);
-    return *(int*)h;  // 期望返回100
+    return *(int*)h;  // Expected to return 100
 }
 
-// RET-L3-01: 返回复杂表达式 ⭐⭐⭐
-// 场景: [SCENE-ALL]
-// 测试: return语句包含复杂计算
+// RET-L3-01: Return complex expression ⭐⭐⭐
+// Scenario: [SCENE-ALL]
+// Test: The return statement contains complex calculations
 int ret_complex_expr(int x, int y, int z) {
-    return x > y ? (z * 2) : (z + 10);  // 条件表达式
+    return x > y ? (z * 2) : (z + 10);  // conditional expression
 }
 
 int call_ret_complex_expr() {
-    int r1 = ret_complex_expr(5, 3, 10);  // true, 返回20
-    int r2 = ret_complex_expr(3, 5, 10);  // false, 返回20
-    return r1 + r2;  // 期望返回40
+    int r1 = ret_complex_expr(5, 3, 10);  // true, returns 20
+    int r2 = ret_complex_expr(3, 5, 10);  // false, returns 20
+    return r1 + r2;  // Expected to return 40
 }
 
-// RET-L3-02: 多分支返回 ⭐⭐
-// 场景: [SCENE-ALL]
-// 测试: 不同分支返回不同值
+// RET-L3-02: Multiple branch return ⭐⭐
+// Scenario: [SCENE-ALL]
+// Test: Different branches return different values
 int ret_multi_branch(int op) {
     switch (op) {
         case 0: return 10;
@@ -620,24 +620,24 @@ int call_ret_multi_branch() {
     sum += ret_multi_branch(0);  // 10
     sum += ret_multi_branch(1);  // 20
     sum += ret_multi_branch(2);  // 30
-    return sum;  // 期望返回60
+    return sum;  // Expected to return 60
 }
 
-// RET-L3-03: 无返回值(void) ⭐
-// 场景: [SCENE-ALL]
-// 测试: void函数通过输出参数返回结果
+// RET-L3-03: No return value (void) ⭐
+// Scenario: [SCENE-ALL]
+// Test: void function returns results through output parameters
 void ret_void(int x, int *out) {
-    *out = x * 3;  // 通过输出参数返回
+    *out = x * 3;  // Return via output parameters
 }
 
 int call_ret_void() {
     int result;
     ret_void(7, &result);
-    return result;  // 期望返回21
+    return result;  // Expected to return 21
 }
 
 // ============================================================================
-// 4.3节测试函数
+// Section 4.3 Test Function
 // ============================================================================
 
 void test_return_values() {
@@ -656,7 +656,7 @@ void test_return_values() {
 
 
 
-// 单独测试入口
+// Individual test entry
 int main() {
     test_calling_conventions();
     test_parameter_passing();
